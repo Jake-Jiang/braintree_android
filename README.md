@@ -1,6 +1,7 @@
 # Braintree Android SDK
 
 ![GitHub Actions Tests](https://github.com/braintree/braintree_android/workflows/Tests/badge.svg)
+[![Instrumentation tests](https://github.com/braintree/braintree_android/actions/workflows/instrumentation_tests.yml/badge.svg)](https://github.com/braintree/braintree_android/actions/workflows/instrumentation_tests.yml)
 
 Welcome to Braintree's Android SDK. This library will help you accept card and alternative payments in your Android app.
 
@@ -23,7 +24,7 @@ For an integration offering card payments, add the following dependency in your 
 
 ```groovy
 dependencies {
-    implementation 'com.braintreepayments.api:card:5.17.0'
+    implementation 'com.braintreepayments.api:card:5.20.0'
 }
 ```
 
@@ -68,7 +69,7 @@ This SDK abides by our Client SDK Deprecation Policy. For more information on th
 | Major version number | Status      | Released      | Deprecated   | Unsupported  |
 |----------------------|-------------|---------------|--------------|--------------|
 | 5.x.x                | Active      | October 2024  | TBA          | TBA          |
-| 4.x.x                | Inactive    | June 2021     | October 2025 | October 2026 |
+| 4.x.x                | Deprecated  | June 2021     | October 2025 | October 2026 |
 | 3.x.x                | Unsupported | February 2019 | June 2022    | June 2023    |
 | 2.x.x                | Unsupported | November 2015 | March 2020   | March 2021   |
 

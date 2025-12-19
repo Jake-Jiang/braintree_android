@@ -1,6 +1,36 @@
 # Braintree Android SDK Release Notes
-  
-## unreleased
+
+## 5.20.0 (2025-12-17)
+
+* All Modules
+    * Fallback to using deep links when the user's default browser does not support app links.
+        * Known limitation: Flow doesn't work on UC and Opera GX browsers for both app links and deep links. See #1473 
+          for testing note.
+* PayPal
+    * Update `PayPalLauncher` constructor to support ActivityResultCaller parameter for Browser Switch with AuthTab integration
+    * Add `restorePendingRequest` method to restore browser state after app switch
+* LocalPayment
+    * Update `LocalPaymentLauncher` constructor to support ActivityResultCaller parameter for Browser Switch with AuthTab integration
+    * Add `restorePendingRequest` method to restore browser state after app switch
+* SEPADirectDebit
+    * Update `SEPADirectDebitLauncher` constructor to support ActivityResultCaller parameter for Browser Switch with AuthTab integration
+    * Add `restorePendingRequest` method to restore browser state after app switch
+* Venmo
+    * Update `VenmoLauncher` constructor to support ActivityResultCaller parameter for Browser Switch with AuthTab integration
+    * Add `restorePendingRequest` method to restore browser state after app switch
+* BraintreeCore
+    * Update Browser Switch version to 3.4.0
+    * Update Android Gradle Plugin version to 8.9.1
+    * Update compileSdkVersion and targetSdkVersion to 36
+
+## 5.19.0 (2025-11-18)
+
+* Card
+  * Fix an issue where a tokenize card errors are masked with a JSON parsing error
+* PayPal
+  * Add `shouldOfferCredit` property to `PayPalCheckoutRequest`. Enables merchants to offer PayPal Credit for Checkout requests.
+
+## 5.18.0 (2025-10-01)
 
 * PayPal
   * Add `recurringBillingDetails`, `recurringBillingPlanType`, and `amountBreakdown` properties to `PayPalCheckoutRequest`. Enables RBA metadata to be passed for the PayPal Checkout Vault with Purchase flow
@@ -9,13 +39,11 @@
   * App switch will be enabled only if `ResolvePayPalUseCase` returns true in addition to the existing checks in `PayPalInternalClient`.
   * App launch will be attempted only if `ResolvePayPalUseCase` returns true in addition to the existing checks in `PayPalLauncher`.
 * BraintreeCore
+  * Add OkHttp version 4.12.0
   * Add FPTI tag `paypal_app_switch_url_received`for when the SDK has received an app switch URL from the Paypal APIs.
   * Existing FPTI tag `attempted_app_switch` will be sent after verifying the Paypal app can resolve the URL.
-
-## unreleased
-
-* BraintreeCore
-    * Add OkHttp version 4.12.0
+* PayPal Messaging
+  * bump version to 1.1.13
 
 ## 5.17.0 (2025-09-09)
 

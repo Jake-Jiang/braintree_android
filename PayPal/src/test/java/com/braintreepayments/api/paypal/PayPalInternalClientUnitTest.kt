@@ -4,13 +4,15 @@ import android.content.Context
 import android.net.Uri
 import com.braintreepayments.api.core.*
 import com.braintreepayments.api.core.Configuration.Companion.fromJson
-import com.braintreepayments.api.core.GetReturnLinkUseCase.ReturnLinkResult
-import com.braintreepayments.api.core.GetReturnLinkUseCase.ReturnLinkResult.DeepLink
+import com.braintreepayments.api.core.usecase.GetReturnLinkUseCase.ReturnLinkResult
+import com.braintreepayments.api.core.usecase.GetReturnLinkUseCase.ReturnLinkResult.DeepLink
+import com.braintreepayments.api.core.usecase.GetAppSwitchUseCase
+import com.braintreepayments.api.core.usecase.GetReturnLinkUseCase
 import com.braintreepayments.api.datacollector.DataCollector
 import com.braintreepayments.api.datacollector.DataCollectorInternalRequest
 import com.braintreepayments.api.paypal.PayPalAccountNonce.Companion.fromJSON
 import com.braintreepayments.api.testutils.Fixtures
-import com.braintreepayments.api.testutils.MockApiClientBuilder
+import com.braintreepayments.api.testutils.MockkApiClientBuilder
 import com.braintreepayments.api.testutils.MockkBraintreeClientBuilder
 import io.mockk.*
 import org.json.JSONException
@@ -64,7 +66,7 @@ class PayPalInternalClientUnitTest {
         deviceInspector = mockk(relaxed = true)
         payPalInternalClientCallback = mockk(relaxed = true)
 
-        every { getReturnLinkUseCase.invoke() } returns ReturnLinkResult.AppLink(
+        every { getReturnLinkUseCase.invoke(any()) } returns ReturnLinkResult.AppLink(
             Uri.parse("https://example.com")
         )
     }
@@ -111,6 +113,7 @@ class PayPalInternalClientUnitTest {
         request.isShippingAddressRequired = true
         request.isShippingAddressEditable = true
         request.shouldOfferPayLater = true
+        request.shouldOfferCredit = true
         request.lineItems = listOf(item)
         request.shippingAddressOverride = shippingAddressOverride
         return request
@@ -141,6 +144,7 @@ class PayPalInternalClientUnitTest {
                 "return_url": "https://example.com://onetouch/v1/success",
                 "cancel_url": "https://example.com://onetouch/v1/cancel",
                 "offer_pay_later": true,
+                "offer_paypal_credit": true,
                 "request_billing_agreement": true,
                 "billing_agreement_details": {
                     "description": "Billing Agreement Description"
@@ -886,7 +890,7 @@ class PayPalInternalClientUnitTest {
     @Test
     @Throws(JSONException::class)
     fun tokenize_onTokenizeResult_returnsAccountNonceToCallback() {
-        val apiClient = MockApiClientBuilder()
+        val apiClient = MockkApiClientBuilder()
             .tokenizeRESTSuccess(
                 JSONObject(Fixtures.PAYMENT_METHODS_PAYPAL_ACCOUNT_RESPONSE)
             )
@@ -913,7 +917,7 @@ class PayPalInternalClientUnitTest {
     @Test
     fun tokenize_onTokenizeError_returnsErrorToCallback() {
         val error = Exception("error")
-        val apiClient = MockApiClientBuilder()
+        val apiClient = MockkApiClientBuilder()
             .tokenizeRESTError(error)
             .build()
         val payPalAccount = mockk<PayPalAccount>(relaxed = true)

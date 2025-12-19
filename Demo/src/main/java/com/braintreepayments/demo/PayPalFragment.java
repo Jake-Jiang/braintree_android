@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 import androidx.navigation.fragment.NavHostFragment;
 
+import com.braintreepayments.api.BrowserSwitchException;
 import com.braintreepayments.api.core.PaymentMethodNonce;
 import com.braintreepayments.api.datacollector.DataCollector;
 import com.braintreepayments.api.datacollector.DataCollectorRequest;
@@ -36,8 +37,26 @@ public class PayPalFragment extends BaseFragment {
 
     private PayPalClient payPalClient;
     private PayPalLauncher payPalLauncher;
+    private Boolean isPayLaterSelected = false;
 
     private DataCollector dataCollector;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        PayPalPendingRequest.Started payPalPendingRequest = PendingRequestStore.getInstance().getPayPalPendingRequest(getContext());
+        if (payPalPendingRequest != null) {
+            String pendingRequest = payPalPendingRequest.getPendingRequestString();
+            payPalLauncher = new PayPalLauncher(this);
+            try {
+                payPalLauncher.restorePendingRequest(pendingRequest);
+            } catch (BrowserSwitchException e) {
+                PendingRequestStore.getInstance().clearPayPalPendingRequest(getContext());
+            }
+        } else {
+            payPalLauncher = new PayPalLauncher(this);
+        }
+    }
 
     @Nullable
     @Override
@@ -49,7 +68,8 @@ public class PayPalFragment extends BaseFragment {
         TextInputEditText buyerPhoneNationalNumberEditText = view.findViewById(R.id.buyer_phone_national_number_edit_text);
         Button billingAgreementButton = view.findViewById(R.id.paypal_billing_agreement_button);
         Button singlePaymentButton = view.findViewById(R.id.paypal_single_payment_button);
-        Switch offerPayLater = view.findViewById(R.id.offer_pay_later_switch);
+        Button singlePaymentPayLaterButton = view.findViewById(R.id.paypal_single_payment_pay_later_button);
+        Button paymentWithCreditButton = view.findViewById(R.id.paypal_pay_with_credit_button);
         Switch contactInformationSwitch = view.findViewById(R.id.contact_info_switch);
         Switch amountBreakdownSwitch = view.findViewById(R.id.amount_breakdown_switch);
 
@@ -60,20 +80,52 @@ public class PayPalFragment extends BaseFragment {
                 buyerPhoneCountryCodeEditText.getText().toString(),
                 buyerPhoneNationalNumberEditText.getText().toString(),
                 contactInformationSwitch.isChecked(),
-                offerPayLater.isChecked(),
+                false,
+                false,
                 amountBreakdownSwitch.isChecked()
             );
         });
-        billingAgreementButton.setOnClickListener(v -> {
+
+        paymentWithCreditButton.setOnClickListener(v -> {
             launchPayPal(
-                true,
+                false,
                 buyerEmailEditText.getText().toString(),
                 buyerPhoneCountryCodeEditText.getText().toString(),
                 buyerPhoneNationalNumberEditText.getText().toString(),
+                contactInformationSwitch.isChecked(),
                 false,
-                offerPayLater.isChecked(),
+                true,
                 amountBreakdownSwitch.isChecked()
             );
+            isPayLaterSelected = false;
+        });
+
+        billingAgreementButton.setOnClickListener(v -> {
+            launchPayPal(
+                    true,
+                    buyerEmailEditText.getText().toString(),
+                    buyerPhoneCountryCodeEditText.getText().toString(),
+                    buyerPhoneNationalNumberEditText.getText().toString(),
+                    contactInformationSwitch.isChecked(),
+                    false,
+                    false,
+                    amountBreakdownSwitch.isChecked()
+            );
+            isPayLaterSelected = false;
+        });
+
+        singlePaymentPayLaterButton.setOnClickListener(v -> {
+            launchPayPal(
+                    false,
+                    buyerEmailEditText.getText().toString(),
+                    buyerPhoneCountryCodeEditText.getText().toString(),
+                    buyerPhoneNationalNumberEditText.getText().toString(),
+                    contactInformationSwitch.isChecked(),
+                    true,
+                    false,
+                    amountBreakdownSwitch.isChecked()
+            );
+            isPayLaterSelected = true;
         });
 
         payPalClient = new PayPalClient(
@@ -82,7 +134,6 @@ public class PayPalFragment extends BaseFragment {
             Uri.parse("https://mobile-sdk-demo-site-838cead5d3ab.herokuapp.com/braintree-payments"),
             "com.braintreepayments.demo.braintree"
         );
-        payPalLauncher = new PayPalLauncher();
 
         amount = RandomDollarAmount.getNext();
         return view;
@@ -100,6 +151,7 @@ public class PayPalFragment extends BaseFragment {
                 handleError(new Exception("User did not complete payment flow"));
             }
             clearPendingRequest();
+            requireActivity().getIntent().setData(null);
         }
     }
 
@@ -121,6 +173,7 @@ public class PayPalFragment extends BaseFragment {
         String buyerPhoneNationalNumber,
         Boolean isContactInformationEnabled,
         Boolean offerPayLater,
+        Boolean offerCredit,
         Boolean isAmountBreakdownEnabled
     ) {
         FragmentActivity activity = getActivity();
@@ -133,10 +186,10 @@ public class PayPalFragment extends BaseFragment {
                 if (dataCollectorResult instanceof DataCollectorResult.Success) {
                     deviceData = ((DataCollectorResult.Success) dataCollectorResult).getDeviceData();
                 }
-                launchPayPal(activity, isBillingAgreement, amount, buyerEmailAddress, buyerPhoneCountryCode, buyerPhoneNationalNumber, isContactInformationEnabled, offerPayLater, isAmountBreakdownEnabled);
+                launchPayPal(activity, isBillingAgreement, amount, buyerEmailAddress, buyerPhoneCountryCode, buyerPhoneNationalNumber, isContactInformationEnabled, offerPayLater, offerCredit, isAmountBreakdownEnabled);
             });
         } else {
-            launchPayPal(activity, isBillingAgreement, amount, buyerEmailAddress, buyerPhoneCountryCode, buyerPhoneNationalNumber, isContactInformationEnabled, offerPayLater, isAmountBreakdownEnabled);
+            launchPayPal(activity, isBillingAgreement, amount, buyerEmailAddress, buyerPhoneCountryCode, buyerPhoneNationalNumber, isContactInformationEnabled, offerPayLater, offerCredit, isAmountBreakdownEnabled);
         }
     }
 
@@ -149,6 +202,7 @@ public class PayPalFragment extends BaseFragment {
         String buyerPhoneNationalNumber,
         boolean isContactInformationEnabled,
         boolean offerPayLater,
+        boolean offerCredit,
         boolean isAmountBreakdownEnabled
     ) {
         PayPalRequest payPalRequest;
@@ -170,6 +224,7 @@ public class PayPalFragment extends BaseFragment {
                 isContactInformationEnabled,
                     null,
                     offerPayLater,
+                    offerCredit,
                     isAmountBreakdownEnabled
             );
         }
@@ -207,6 +262,7 @@ public class PayPalFragment extends BaseFragment {
                 PayPalFragmentDirections.actionPayPalFragmentToDisplayNonceFragment(paymentMethodNonce);
             action.setTransactionAmount(amount);
             action.setDeviceData(deviceData);
+            action.setIsPayLaterSelected(isPayLaterSelected);
 
             NavHostFragment.findNavController(this).navigate(action);
         }
